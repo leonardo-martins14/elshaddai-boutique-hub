@@ -12,6 +12,7 @@
     "format": "prettier --write .",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/lib/db/seed.ts",
+    "db:verify": "tsx src/lib/db/verify.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

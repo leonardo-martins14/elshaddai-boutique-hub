@@ -143,3 +143,27 @@ Immediate development priorities for the backend implementation:
 6. **Validate Stock on the Server:** Ensure inventory availability before confirming any purchase.
 7. **Use Transactions Where Appropriate:** Execute order insertion, item creation, coupon redemption, and stock decrements atomically within `db.transaction`.
 8. **Test the Complete Checkout Flow:** Conduct end-to-end checkout validation to verify database persistence and data integrity.
+
+---
+
+## 🛡️ AppSec Environment Preparation (Burp Suite & Browser Setup)
+
+As part of preparing for Phase 4 (AppSec evaluation in an isolated lab), the interception tooling was configured with zero active exploitation performed today:
+
+* **Proxy Listener:** Confirmed standard local listener on `127.0.0.1:8080` in Burp Suite Community/Professional.
+* **Browser Interception Strategy:** 
+  * Option A (Recommended): Burp's embedded Chromium browser (`Proxy > Open browser`), which requires no certificate installation and pre-routes all loopback traffic.
+  * Option B (Dedicated profile): External browser configured with proxy host `127.0.0.1:8080`, PortSwigger CA certificate installed in the Trusted Root Certification Authorities store, and proxy bypass rules cleared (removing `<-loopback>` or `localhost` from bypass lists).
+* **Target Scope Definition:** Configured Target Scope filter in Burp strictly to `http://localhost:5173.*` to avoid intercepting extraneous operating system or browser background telemetry.
+* **WebSocket Handling:** Configured Vite HMR (Hot Module Replacement) WebSocket passthrough in proxy match/replace rules to prevent UI disconnections during development.
+* **Compliance:** Verification confirmed strictly passive tool readiness; no intrusive scans, fuzzing, or attack payloads were deployed.
+
+---
+
+## 🏁 Day 1 Closing Summary
+
+* [x] **Technical Documentation Closed:** [`README.md`](README.md) updated with full tech stack (React 19, Vite 7, Drizzle, LibSQL/SQLite) and database lifecycle commands (`db:push`, `db:seed`, `db:verify`, `db:studio`).
+* [x] **Database Verified:** Executed `npm run db:verify` on `local.db`, confirming 3 seeded user accounts, 4 catalog products, and 3 active coupons.
+* [x] **Security Baseline Established:** Burp Suite interceptor profile documented and configured; testing pipeline scheduled for post-MVP.
+* [x] **Repository Clean:** Git status verified and changes committed cleanly.
+
