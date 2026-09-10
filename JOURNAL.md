@@ -1,131 +1,145 @@
-# 📓 Diário de Desenvolvimento & AppSec Lab (Journal)
+# Engineering & Security Journal
 
-**Projeto:** El Shaddai Fragrances — Boutique & AppSec Pentest Lab  
-**Data:** 10 de Setembro de 2026  
-**Objetivo:** Compreender a arquitetura existente e estabelecer as fundações para transformar a boutique num laboratório prático de Segurança Aplicacional (AppSec) e Pentesting Web.
-
----
-
-## 🎯 Resumo dos 5 Passos de Hoje
-
-- [x] **① Perceber o `server.ts`**: Análise do entrypoint do servidor Nitro / TanStack Start e do tratamento de SSR / erros.
-- [x] **② Perceber o `example.functions.ts`**: Como funcionam as *Server Functions* (`createServerFn`), separação cliente/servidor e validação Zod.
-- [x] **③ Começar SQLite + Drizzle ORM**: Instalação e configuração de uma base de dados local (`local.db`) com tabelas (`users`, `products`, `orders`, `order_items`, `coupons`) e script de seed.
-- [x] **④ Fazer Commit do Estado Atual**: Sincronização e commit do baseline no repositório git.
-- [x] **⑤ Criar este Diário (`JOURNAL.md`)**: Registo arquitetural, decisões tomadas e roteiro para amanhã.
+**Project:** El Shaddai Fragrances — E-Commerce Platform & AppSec Lab  
+**Date:** September 10, 2026  
+**Status:** In Active Development (Pre-Production)  
 
 ---
 
-## 🧠 ① Deep Dive: Como funciona o `src/server.ts`
+## Project Overview
 
-```typescript
-// src/server.ts (estrutura simplificada)
-export default {
-  async fetch(request: Request, env: unknown, ctx: unknown) {
-    const handler = await getServerEntry();
-    const response = await handler.fetch(request, env, ctx);
-    return await normalizeCatastrophicSsrResponse(response);
-  }
-}
-```
+El Shaddai Fragrances is a boutique e-commerce web application dedicated to luxury Oriental perfumery in Switzerland. The project serves a dual purpose:
 
-1. **Padrão Web-Standard Fetch:**
-   O ficheiro exporta um objeto padrão `{ fetch(request, env, ctx) }`. Isto torna o backend compatível tanto com Node.js local como com runtimes edge (ex: Cloudflare Workers).
-2. **Carregamento Dinâmico de SSR:**
-   Faz lazy-loading do `@tanstack/react-start/server-entry`. É este handler que orquestra a renderização no servidor (SSR) do React 19 e despacha as chamadas RPC das rotas.
-3. **Tratamento de Exceções de SSR (`normalizeCatastrophicSsrResponse`):**
-   O motor interno do Nitro (`h3`) captura exceções não tratadas e converte-as num JSON com status 500 (`{"unhandled":true,"message":"HTTPError"}`). O `server.ts` interceta este caso, extrai o erro original via `consumeLastCapturedError()` e devolve uma página HTML formatada (`renderErrorPage()`).
+1. **Production Objective:** Delivering a secure, functional, and performant commercial web boutique with localized Swiss payment flows (TWINT, IBAN bank transfer, and card payments).
+2. **Security & Research Objective:** Serving as an authentic web application security (AppSec) and penetration testing laboratory in an isolated development environment, enabling hands-on practice with vulnerability discovery, exploit verification (e.g., using Burp Suite), and secure-code remediation.
 
 ---
 
-## ⚡ ② Deep Dive: Como funciona o `src/lib/api/example.functions.ts`
+## My Role & Development Methodology
 
-```typescript
-// src/lib/api/example.functions.ts
-export const getGreeting = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ name: z.string().min(1) }))
-  .handler(async ({ data }) => {
-    return { greeting: `Hello, ${data.name}!` };
-  });
-```
+This project is developed using an **AI-assisted engineering methodology**:
 
-1. **RPC Tipado (Remote Procedure Call):**
-   Em vez de criar uma API REST clássica com `fetch('/api/...')` manual, o TanStack Start permite invocar `getGreeting({ data: { name: "Ada" } })` diretamente em componentes ou loaders.
-2. **Separação de Bundles (Code Splitting):**
-   No build, o Vite substitui o corpo da função no cliente por um cliente HTTP leve. O código do `.handler(...)` nunca viaja para o browser.
-3. **Regra dos ficheiros `.server.ts`:**
-   Qualquer ficheiro que termine em `.server.ts` (ex: `config.server.ts` ou `index.server.ts`) é estritamente de backend. Dependências de servidor (como conexão à base de dados, chaves de API) devem ser importadas apenas dentro do `.handler` ou de módulos `.server.ts`.
+* **Architecture & Requirements:** I define system specifications, data models, business logic constraints, and security standards.
+* **Review & Verification:** I critically review code changes, architectural decisions, and dependency selections generated with AI tools.
+* **Testing & Security Validation:** I execute system tests, verify database integrity, validate security properties, and ensure the implementation aligns with established software engineering principles.
+* **Hands-on Understanding:** I maintain deep understanding of each component, server entrypoint, and data flow to prepare for subsequent security analysis and code audits.
 
 ---
 
-## 🗄️ ③ Implementação: SQLite + Drizzle ORM
+## Current Status
 
-### 1. Pacotes Instalados
-* `drizzle-orm` (ORM TypeScript leve e com zero dependências externas pesadas)
-* `@libsql/client` (Cliente LibSQL/SQLite com suporte nativo multiplataforma)
-* `drizzle-kit` (Ferramenta de migrações e studio)
-* `tsx` (Executor TypeScript para scripts de seed e manutenção)
-
-### 2. Estrutura Criada
-* **Configuração:** [`drizzle.config.ts`](drizzle.config.ts)
-* **Conexão:** [`src/lib/db/index.server.ts`](src/lib/db/index.server.ts) apontando para `local.db`
-* **Schema de Dados:** [`src/lib/db/schema.ts`](src/lib/db/schema.ts):
-  * `users` (id, email, passwordHash, fullName, role: 'customer' | 'admin', createdAt)
-  * `products` (id, slug, name, brand, price, originalPrice, category, description, stock, rating, reviewCount)
-  * `orders` (id, userId, clientName, clientEmail, clientPhone, shippingAddress, paymentMethod, subtotal, shipping, grandTotal, status, notes, createdAt)
-  * `orderItems` (id, orderId, productId, productName, size, price, quantity)
-  * `coupons` (id, code, discountPercent, isActive, maxUses, usedCount)
-* **Povoamento Inicial:** [`src/lib/db/seed.ts`](src/lib/db/seed.ts)
-  * Utilizador Admin: `admin@elshaddai.ch`
-  * Clientes de teste: `alice@example.com`, `bob@example.com`
-  * Cupões: `BIENVENUE10`, `VIP20`, `HACKME100`
-  * Perfumes do catálogo inseridos no SQLite.
-
-### 3. Comandos Adicionados ao `package.json`
-```bash
-npm run db:push    # Aplica alterações do schema diretamente no SQLite
-npm run db:seed    # Popula dados de demonstração
-npm run db:studio  # Abre o painel visual Drizzle Studio no browser
-```
+* **Frontend:** Fully implemented and styled using React 19, Vite, Tailwind CSS v4, and Radix UI primitives. It features a responsive catalog, interactive scent quiz, cart drawer with tiered discounts, and checkout forms.
+* **Backend & Database:** The persistent database layer (SQLite + Drizzle ORM) has just been initialized. The real backend logic connecting client actions to database transactions is actively being built.
+* **Production Readiness:** **The application is NOT production-ready yet.** All state transitions currently rely on client-side state and mock data.
+* **Immediate Milestone:** Transitioning from client-side state to a fully validated, secure Minimum Viable Product (MVP) backend.
+* **Next Major Milestone:** Cloud deployment, end-to-end purchasing tests, and completing the first real/test transaction.
+* **Security Scope:** All security audits, penetration testing exercises, and intentional flaw injection will be conducted **strictly within authorized local and staging lab environments**, never against live production infrastructure or real users.
 
 ---
 
-## 🚀 Novo Roteiro Prioritário: Da Loja Real à Primeira Venda
+## Architectural Deep Dive: Completed Milestones
 
-A estratégia oficial foca-se em construir primeiro a **loja funcional, robusta e segura**, publicar em produção e, posteriormente, criar a vertente de laboratório de pentesting.
+### 1. Server Entrypoint (`src/server.ts`)
+
+The application leverages TanStack Start with a Nitro-based server entrypoint utilizing the standard Web Fetch API (`fetch(request, env, ctx)`):
+
+* **SSR Orchestration:** Lazily imports `@tanstack/react-start/server-entry` on the first request to render React 19 pages server-side and dispatch RPC calls.
+* **Platform Portability:** Adherence to standard `Request`/`Response` primitives ensures the application can run across Node.js, Docker, or edge environments (e.g., Cloudflare Workers).
+* **Catastrophic Error Normalization:** Nitro's `h3` core absorbs uncaught SSR exceptions into internal JSON 500 responses (`{"unhandled":true,"message":"HTTPError"}`). The custom `normalizeCatastrophicSsrResponse` function intercepts these occurrences, retrieves original diagnostics via `consumeLastCapturedError()`, and renders a styled fallback error page (`renderErrorPage()`).
+
+### 2. Server Functions Architecture (`createServerFn`)
+
+Server-side operations utilize TanStack Start's `createServerFn` construct (demonstrated in `src/lib/api/example.functions.ts`):
+
+* **Type-Safe RPCs:** Enables client components and route loaders to invoke server procedures directly with full TypeScript type inference.
+* **Automatic Code Splitting:** During compilation, function bodies inside `.handler(...)` are extracted exclusively into the server bundle. The browser client receives only a lightweight HTTP RPC proxy.
+* **Server-Only Module Boundary:** Files adhering to the `.server.ts` naming convention (such as `src/lib/config.server.ts` and `src/lib/db/index.server.ts`) are completely excluded from client bundles, preventing leakage of database handles, secrets, or internal server logic.
+
+### 3. Database Layer: SQLite + Drizzle ORM
+
+To balance zero-configuration local execution with future cloud scalability, the database layer was implemented using `@libsql/client` and `drizzle-orm`:
+
+* **Driver Choice (`@libsql/client`):** Unlike native SQLite packages with C++ bindings (such as `better-sqlite3`), LibSQL operates across diverse environments without compilation dependencies and natively supports seamless transition to distributed cloud databases (e.g., Turso) by adjusting environment variables.
+* **Configuration:** Established in `drizzle.config.ts`, mapping to `local.db` for local operations.
+* **Database Client:** Isolated within `src/lib/db/index.server.ts`.
+* **Database Schema (`src/lib/db/schema.ts`):**
+  * `users`: Stores user credentials (`passwordHash`), roles (`customer` vs. `admin`), and timestamps.
+  * `products`: Stores catalog details, authoritative prices, descriptions, and stock quantities.
+  * `orders`: Tracks checkout records, customer details, payment choices, and financial totals.
+  * `orderItems`: Stores individual line items per order linked via foreign keys.
+  * `coupons`: Manages discount codes, percentage values, usage quotas, and active statuses.
+* **Database Seeding (`src/lib/db/seed.ts`):**
+  * Populates development catalog items and sample customer accounts.
+  * Includes development/lab coupons (`BIENVENUE10`, `VIP20`, and a testing coupon `HACKME100` reserved strictly for development evaluation).
+  * *Security Note:* Default admin accounts and mock seeds are restricted to local development environments; production deployments will require authenticated, interactive bootstrap commands with strong salted hashing.
+* **Automation Scripts Added to `package.json`:**
+  * `npm run db:push`: Synchronizes the Drizzle schema directly to the database.
+  * `npm run db:seed`: Seeds local database records.
+  * `npm run db:studio`: Launches Drizzle Studio for visual database inspection.
+
+### 4. Source Control Baseline
+
+* Project state baseline committed to Git (`chore: sync current project state`).
+* Database infrastructure, schema, and dev tooling committed (`feat(db): setup SQLite with Drizzle ORM and add dev journal`).
+* Database binaries (`*.db`, `*.db-journal`, `local.db`) added to `.gitignore` to prevent committing persistent data.
+
+---
+
+## Project Roadmap
+
+The project follows a **security-by-design, production-first progression**. Robust application logic and real-world deployment take precedence before creating experimental security labs.
 
 ```
-Loja Funcional ──► Deploy em Produção ──► Teste Real (TWINT) ──► Primeira Venda
-                                │
-                                ▼ (Em seguida)
-                  Branch Lab: Pentesting & AppSec com Burp Suite
+Database foundation
+       │
+       ▼
+Real backend
+       │
+       ▼
+Products / Orders / Coupons
+       │
+       ▼
+Authentication / Authorization
+       │
+       ▼
+Server-side validation
+       │
+       ▼
+Production deployment
+       │
+       ▼
+End-to-end purchase testing
+       │
+       ▼
+First real sale
+       │
+       ▼
+Separate AppSec lab environment
+       │
+       ▼
+Controlled vulnerabilities
+       │
+       ▼
+Burp Suite testing
+       │
+       ▼
+Remediation
+       │
+       ▼
+Retesting
 ```
-
-### Amanhã — Backend Funcional (Foco Total)
-
-1. **Produtos da BD (`src/lib/api/products.functions.ts`):**
-   * Criar Server Functions para listar catálogo e obter detalhe por slug a partir do SQLite via Drizzle.
-   * Ligar o frontend às funções de servidor, mantendo a interface visual impecável.
-2. **Cupões no Servidor (`src/lib/api/coupons.functions.ts`):**
-   * Endpoint para validar cupões na tabela `coupons` (verificar `isActive`, limite de usos e datas).
-   * Cálculo de desconto garantido pelo servidor, não pelo browser.
-3. **Checkout e Gestão de Stock Transacional (`src/lib/api/orders.functions.ts`):**
-   * O servidor ignora preços enviados pelo cliente e calcula o total com base nos preços autoritários da BD.
-   * Uso de transação atómica (`db.transaction`):
-     * Verificação e decremento de stock.
-     * Criação do registo na tabela `orders`.
-     * Criação dos itens na tabela `order_items`.
-     * Incremento de uso do cupão.
-4. **Validação Ponta a Ponta:**
-   * Realizar uma compra de teste completa no browser.
-   * Inspecionar via `npm run db:studio` a integridade da encomenda e atualização de stock.
 
 ---
 
-## 🛡️ Fase Seguinte: AppSec & Pentest Lab (Ambiente Controlado)
+## Next Steps
 
-Após a loja estar segura e pronta a publicar:
-1. Criar branch `lab/appsec-training`.
-2. Introduzir vulnerabilidades didáticas controladas (ex: bypass de preços no checkout, IDOR nas encomendas).
-3. Realizar testes práticos com **Burp Suite** (interceptação de pedidos, modificação de payloads).
-4. Praticar a remediação e correção no código.
+Immediate development priorities for the backend implementation:
+
+1. **Connect Products to the Database:** Link the product catalog and categories directly to the database layer.
+2. **Implement Server-Side Product Retrieval:** Replace static imports with server functions to fetch products and detail views.
+3. **Implement Server-Side Coupon Validation:** Validate coupon codes, status, and discount limits strictly on the server.
+4. **Implement Server-Side Order Creation:** Process orders via dedicated server handlers.
+5. **Calculate Prices on the Server:** Compute subtotal, discounts, and grand totals server-side using authoritative database prices, discarding any untrusted client calculations.
+6. **Validate Stock on the Server:** Ensure inventory availability before confirming any purchase.
+7. **Use Transactions Where Appropriate:** Execute order insertion, item creation, coupon redemption, and stock decrements atomically within `db.transaction`.
+8. **Test the Complete Checkout Flow:** Conduct end-to-end checkout validation to verify database persistence and data integrity.
