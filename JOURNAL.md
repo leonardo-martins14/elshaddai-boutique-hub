@@ -90,15 +90,42 @@ npm run db:studio  # Abre o painel visual Drizzle Studio no browser
 
 ---
 
-## 🛡️ Roteiro para Amanhã (AppSec & Vulnerabilidades)
+## 🚀 Novo Roteiro Prioritário: Da Loja Real à Primeira Venda
 
-1. **Autenticação Real com Vulnerabilidade Didática:**
-   * Criar `loginUser` e `registerUser` via `createServerFn`.
-   * Introduzir um toggle de segurança (`SECURITY_MODE = "vulnerable" | "secure"`):
-     * *Vulnerável:* SQL Injection no campo de login ou JWT com secret fraco (`secret123`) e sem rate limit.
-2. **Business Logic Flaw no Checkout (Price Tampering):**
-   * Criar `createOrder` no backend que, no modo vulnerável, aceita o preço enviado pelo carrinho (`grandTotal`) sem revalidar com o preço real do produto no SQLite.
-3. **IDOR na Consulta de Encomendas:**
-   * Criar endpoint de detalhe da encomenda acessível por ID sequencial sem validação de pertença ao utilizador autenticado.
-4. **Painel de Desafios (CTF / Lab Guide):**
-   * Documentar os vetores de ataque com instruções passo a passo para **Burp Suite** e **sqlmap**.
+A estratégia oficial foca-se em construir primeiro a **loja funcional, robusta e segura**, publicar em produção e, posteriormente, criar a vertente de laboratório de pentesting.
+
+```
+Loja Funcional ──► Deploy em Produção ──► Teste Real (TWINT) ──► Primeira Venda
+                                │
+                                ▼ (Em seguida)
+                  Branch Lab: Pentesting & AppSec com Burp Suite
+```
+
+### Amanhã — Backend Funcional (Foco Total)
+
+1. **Produtos da BD (`src/lib/api/products.functions.ts`):**
+   * Criar Server Functions para listar catálogo e obter detalhe por slug a partir do SQLite via Drizzle.
+   * Ligar o frontend às funções de servidor, mantendo a interface visual impecável.
+2. **Cupões no Servidor (`src/lib/api/coupons.functions.ts`):**
+   * Endpoint para validar cupões na tabela `coupons` (verificar `isActive`, limite de usos e datas).
+   * Cálculo de desconto garantido pelo servidor, não pelo browser.
+3. **Checkout e Gestão de Stock Transacional (`src/lib/api/orders.functions.ts`):**
+   * O servidor ignora preços enviados pelo cliente e calcula o total com base nos preços autoritários da BD.
+   * Uso de transação atómica (`db.transaction`):
+     * Verificação e decremento de stock.
+     * Criação do registo na tabela `orders`.
+     * Criação dos itens na tabela `order_items`.
+     * Incremento de uso do cupão.
+4. **Validação Ponta a Ponta:**
+   * Realizar uma compra de teste completa no browser.
+   * Inspecionar via `npm run db:studio` a integridade da encomenda e atualização de stock.
+
+---
+
+## 🛡️ Fase Seguinte: AppSec & Pentest Lab (Ambiente Controlado)
+
+Após a loja estar segura e pronta a publicar:
+1. Criar branch `lab/appsec-training`.
+2. Introduzir vulnerabilidades didáticas controladas (ex: bypass de preços no checkout, IDOR nas encomendas).
+3. Realizar testes práticos com **Burp Suite** (interceptação de pedidos, modificação de payloads).
+4. Praticar a remediação e correção no código.
