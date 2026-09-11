@@ -13,6 +13,7 @@ async function verify() {
   console.log(`Coupons in DB:  ${couponList.length} (Codes: ${couponList.map((c) => c.code).join(", ")})`);
   console.log(`Orders in DB:   ${orderList.length}`);
   console.log("Status: SQLite database is ACTIVE and correctly seeded!");
+  process.exit(0);
 }
 
 verify().catch((err) => {
